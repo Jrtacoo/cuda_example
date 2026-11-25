@@ -18,7 +18,7 @@ inline void gpuAssert(cudaError_t code, const char * file, int line)
     }
 }
 
-const int M = 5;
+const int M = 6;
 
 __global__ void reduce0(float *d_in, float *d_out, int n)
 {
@@ -151,6 +151,33 @@ __global__ void reduce4(float *g_idata, float *g_odata, unsigned int n) {
     if (tid == 0) g_odata[blockIdx.x] = sdata[0];
 }
 
+__global__ void reduce5(float *d_in, float *d_out, int n)
+{
+    extern __shared__ float s_data[];
+    int tid = threadIdx.x;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;
+    s_data[tid] = (i < n) ? d_in[i] : 0.0f;
+    __syncthreads();
+
+    for(int s = blockDim.x / 2; s > 32; s >>= 1)
+    {
+        if(tid < s) s_data[tid] += s_data[tid + s];
+        __syncthreads();
+    }
+    
+    if(tid < 32)
+    {
+        s_data[tid] += s_data[tid + 32]; __syncwarp();
+        s_data[tid] += s_data[tid + 16]; __syncwarp();
+        s_data[tid] += s_data[tid + 8]; __syncwarp();
+        s_data[tid] += s_data[tid + 4]; __syncwarp();
+        s_data[tid] += s_data[tid + 2]; __syncwarp();
+        s_data[tid] += s_data[tid + 1]; __syncwarp();
+    }
+
+    if(tid == 0) d_out[blockIdx.x] = s_data[0];
+}
+
 // ============================================
 // bench_kernel: 对 reduce3 单独使用 numBlocksReduce3
 // ============================================
@@ -171,6 +198,7 @@ double bench_kernel(int kernel_id, int blockSize, float *d_idata, float *d_odata
             case 2: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 3: reduce3<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 4: reduce4<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
+            case 5: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
         }
     }
     checkCuda(cudaDeviceSynchronize());
@@ -184,6 +212,7 @@ double bench_kernel(int kernel_id, int blockSize, float *d_idata, float *d_odata
             case 2: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 3: reduce3<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 4: reduce4<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
+            case 5: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
         }
     }
     checkCuda(cudaDeviceSynchronize());
