@@ -159,20 +159,10 @@ __global__ void reduce5(float *d_in, float *d_out, int n)
     s_data[tid] = (i < n) ? d_in[i] : 0.0f;
     __syncthreads();
 
-    for(int s = blockDim.x / 2; s > 32; s >>= 1)
+    for(int s = blockDim.x / 2; s > 0; s >>= 1)
     {
         if(tid < s) s_data[tid] += s_data[tid + s];
         __syncthreads();
-    }
-    
-    if(tid < 32)
-    {
-        s_data[tid] += s_data[tid + 32]; __syncwarp();
-        s_data[tid] += s_data[tid + 16]; __syncwarp();
-        s_data[tid] += s_data[tid + 8]; __syncwarp();
-        s_data[tid] += s_data[tid + 4]; __syncwarp();
-        s_data[tid] += s_data[tid + 2]; __syncwarp();
-        s_data[tid] += s_data[tid + 1]; __syncwarp();
     }
 
     if(tid == 0) d_out[blockIdx.x] = s_data[0];
@@ -254,7 +244,7 @@ int main()
     if (numBlocks > prop.maxGridSize[0]) numBlocks = prop.maxGridSize[0];
     
     // ---- reduce3: 固定少量 block，利用 grid-stride loop 遍历全数组 ----
-    int numBlocksReduce3 = prop.multiProcessorCount * 32;
+    int numBlocksReduce3 = 256;
     if (numBlocksReduce3 < 128) numBlocksReduce3 = 128;
     
     int maxNumBlocks = std::max(numBlocks, numBlocksReduce3);
