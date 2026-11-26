@@ -188,7 +188,7 @@ double bench_kernel(int kernel_id, int blockSize, float *d_idata, float *d_odata
             case 2: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 3: reduce3<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 4: reduce4<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
-            case 5: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
+            case 5: reduce5<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
         }
     }
     checkCuda(cudaDeviceSynchronize());
@@ -202,7 +202,7 @@ double bench_kernel(int kernel_id, int blockSize, float *d_idata, float *d_odata
             case 2: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 3: reduce3<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
             case 4: reduce4<256><<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
-            case 5: reduce2<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
+            case 5: reduce5<<<launchBlocks, blockSize, sharedMem>>>(d_idata, d_odata, n); break;
         }
     }
     checkCuda(cudaDeviceSynchronize());
